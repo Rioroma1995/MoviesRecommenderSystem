@@ -25,9 +25,61 @@ public class DataSource {
         getUserItemRating = -1;
         items = null;
         ratings = null;
-
         try {
             statement = conn.createStatement();
+            //clearRatings();
+            //clearMovies();
+            //if (getNumItems() == 0)
+            //    fillDB();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void fillDB() {
+        CSVParser csv = new CSVParser();
+        csv.parse(this, "D://ICCDH/MoviesRecommenderSystem/Data/movies.csv", true);
+        csv.parse(this, "D://ICCDH/MoviesRecommenderSystem/Data/ratings.csv", false);
+    }
+
+    public void addMovie(int id, String title) {
+        try {
+            String sql = "INSERT INTO movies VALUES (?, ?)";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, id);
+            stmt.setString(2, title);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("id: " + id);
+            e.printStackTrace();
+        }
+    }
+
+    public void addRating(int userId, int movieId, double rating) {
+        try {
+            String sql = "INSERT INTO ratings VALUES (?, ?, ?)";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, userId);
+            stmt.setInt(2, movieId);
+            stmt.setDouble(3, rating);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("userId: " + userId + " movieId: " + movieId + " rating: " + rating);
+            e.printStackTrace();
+        }
+    }
+
+    private void clearMovies() {
+        try {
+            statement.executeUpdate("DELETE FROM movies");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void clearRatings() {
+        try {
+            statement.executeUpdate("DELETE FROM ratings");
         } catch (SQLException e) {
             e.printStackTrace();
         }

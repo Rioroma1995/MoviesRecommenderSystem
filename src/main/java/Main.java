@@ -7,8 +7,6 @@ import java.util.ArrayList;
 
 public class Main {
     public static void main(String[] args) {
-        CSVParser csv = new CSVParser();
-        csv.parse("D://ICCDH/RecommenderSystemForMovies/Data/test.csv", true);
         DataSource dataSRC = new DataSource();
         SlopeOneMatrix avgDiff = new SlopeOneMatrix(dataSRC);
         SlopeOneRecommender slopeOne = new SlopeOneRecommender(dataSRC, avgDiff);
