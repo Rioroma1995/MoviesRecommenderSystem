@@ -31,19 +31,21 @@ public class SlopeOneMatrix {
             // for all other item, j
             for (int j = 1; j <= i; j++) {
                 // for every user u expressing preference for both i and j
-                for (Entry<Integer, Integer> entry : (dataSRC.getRatings()).get(j).entrySet()) {
-                    userJ = entry.getKey();
-                    ratingJ = entry.getValue();
+                if((dataSRC.getRatings()).get(j)!=null) {
+                    for (Entry<Integer, Integer> entry : (dataSRC.getRatings()).get(j).entrySet()) {
+                        userJ = entry.getKey();
+                        ratingJ = entry.getValue();
 
-                    if (dataSRC.getRatings().get(i).containsKey(userJ)) {
-                        if (i != j) {
-                            userI = userJ;
+                        if (dataSRC.getRatings().get(i) != null && dataSRC.getRatings().get(i).containsKey(userJ)) {
+                            if (i != j) {
+                                userI = userJ;
 
-                            ratingI = dataSRC.getRatings().get(i).get(userI);
+                                ratingI = dataSRC.getRatings().get(i).get(userI);
 
-                            dev = ratingJ - ratingI;
-                            sum += dev;
-                            countSim++;
+                                dev = ratingJ - ratingI;
+                                sum += dev;
+                                countSim++;
+                            }
                         }
                     }
                 }
