@@ -8,10 +8,11 @@ class SlopeOne {
     }
 
     void test() {
+        //clearRatings();
         clearMatrix();
         try {
             Statement statement = conn.createStatement();
-            ResultSet resultSet = statement.executeQuery("SELECT * FROM rating");
+            ResultSet resultSet = statement.executeQuery("SELECT * FROM `BX-Book-Ratings`");
             while (resultSet.next()) {
                 int userId = resultSet.getInt(1);
                 int itemId = resultSet.getInt(2);
@@ -27,8 +28,9 @@ class SlopeOne {
     void updateDevTable(int userId, int itemId) {
         try {
             //Користувач оцінив новий елемент, тому ми шукаємо різницю в оцініці миж ним, та кожним іншим елементом, який оцінив наш юзер
-            String sql = "SELECT DISTINCT r.itemID, (r2.ratingValue - r.ratingValue) as ratingDifference FROM rating r, rating r2 " +
-                    "WHERE r.userID=? AND r.itemID<>? AND r2.itemID=? AND r2.userID=?;";
+            String sql = "SELECT DISTINCT r.ISBN, (r2.Book_Rating - r.Book_Rating) as ratingDifference " +
+                    "FROM `BX-Book-Ratings` r, `BX-Book-Ratings` r2 " +
+                    "WHERE r.userID=? AND r.ISBN<>? AND r2.ISBN=? AND r2.userID=?;";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, userId);
             stmt.setInt(2, itemId);
@@ -36,7 +38,7 @@ class SlopeOne {
             stmt.setInt(4, userId);
             ResultSet resultSet = stmt.executeQuery();
             while (resultSet.next()) {
-                int otherItemID = resultSet.getInt("itemID");
+                int otherItemID = resultSet.getInt("ISBN");
                 int ratingDifference = resultSet.getInt("ratingDifference");
                 //Якщо пара (itemID, otherItemID) вже є у матриці, то оновимо значення для count і sum
                 int countOfPairs = 0;
@@ -75,15 +77,15 @@ class SlopeOne {
         try {
             double denom = 0.0; //знаменник
             double numer = 0.0; //чисельник
-            String sql = "SELECT r.itemID, r.ratingValue FROM rating r WHERE r.userID=? AND r.itemID <> ?";
+            String sql = "SELECT r.ISBN, r.Book_Rating FROM `BX-Book-Ratings` r WHERE r.userID=? AND r.ISBN <> ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, userId);
             stmt.setInt(2, itemId);
             ResultSet resultSet = stmt.executeQuery();
 
             while (resultSet.next()) {
-                int j = resultSet.getInt("itemID");
-                int ratingValue = resultSet.getInt("ratingValue");
+                int j = resultSet.getInt("ISBN");
+                int ratingValue = resultSet.getInt("Book_Rating");
                 //скільки разів користувачі оцінювали пару (itemId, j)
                 stmt = conn.prepareStatement("SELECT d.count, d.sum FROM dev d WHERE itemID1=? AND itemID2=?");
                 stmt.setInt(1, itemId);
@@ -111,11 +113,11 @@ class SlopeOne {
     void predictBest(int userId, int n) {
         try {
             String sql = "SELECT d.itemID1 as item, " +
-                    "sum(d.count*(d.sum/d.count+ r.ratingValue))/sum(d.count) as avgRat " +
-                    "FROM  rating r, dev d " +
+                    "sum(d.count*(d.sum/d.count+ r.Book_Rating))/sum(d.count) as avgRat " +
+                    "FROM  `BX-Book-Ratings` r, dev d " +
                     "WHERE r.userID=? " +
-                    "AND d.itemID1 NOT IN (SELECT itemID FROM rating WHERE userID=?) " +
-                    "AND d.itemID2=r.itemID " +
+                    "AND d.itemID1 NOT IN (SELECT ISBN FROM `BX-Book-Ratings` WHERE userID=?) " +
+                    "AND d.itemID2=r.ISBN " +
                     "GROUP BY d.itemID1 ORDER BY avgRat DESC LIMIT ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, userId);
@@ -135,7 +137,7 @@ class SlopeOne {
     private void clearRatings() {
         try {
             Statement statement = conn.createStatement();
-            statement.executeUpdate("DELETE FROM rating");
+            statement.executeUpdate("DELETE FROM `BX-Book-Ratings`");
         } catch (SQLException e) {
             e.printStackTrace();
         }
