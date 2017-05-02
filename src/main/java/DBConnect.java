@@ -2,9 +2,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class DBConnect {
+class DBConnect {
 
-    public Connection getConnection() {
+    Connection getConnection() {
         String username = "Romka";
         String password = "123456789";
         Connection conn = null;
@@ -18,7 +18,6 @@ public class DBConnect {
         } catch (SQLException e) {
             throw new RuntimeException("Cannot connect the database!", e);
         }
-
         return conn;
     }
 
