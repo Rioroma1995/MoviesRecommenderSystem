@@ -30,7 +30,8 @@ class SlopeOne {
             //Користувач оцінив новий елемент, тому ми шукаємо різницю в оцініці миж ним, та кожним іншим елементом, який оцінив наш юзер
             String sql = "SELECT DISTINCT r.ISBN, (r2.Book_Rating - r.Book_Rating) as ratingDifference " +
                     "FROM `BX-Book-Ratings` r, `BX-Book-Ratings` r2 " +
-                    "WHERE r.userID=? AND r.ISBN<>? AND r2.ISBN=? AND r2.userID=?;";
+                    "WHERE r.userID=? AND r.ISBN<>? AND r.Book_Rating<>0 " +
+                    "AND r2.ISBN=? AND r2.userID=? AND r2.Book_Rating<>0;";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, userId);
             stmt.setInt(2, itemId);
@@ -77,7 +78,7 @@ class SlopeOne {
         try {
             double denom = 0.0; //знаменник
             double numer = 0.0; //чисельник
-            String sql = "SELECT r.ISBN, r.Book_Rating FROM `BX-Book-Ratings` r WHERE r.userID=? AND r.ISBN <> ?";
+            String sql = "SELECT r.ISBN, r.Book_Rating FROM `BX-Book-Ratings` r WHERE r.userID=? AND r.ISBN <> ? AND r.Book_Rating<>0";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, userId);
             stmt.setInt(2, itemId);
@@ -117,7 +118,7 @@ class SlopeOne {
                     "FROM  `BX-Book-Ratings` r, dev d " +
                     "WHERE r.userID=? " +
                     "AND d.itemID1 NOT IN (SELECT ISBN FROM `BX-Book-Ratings` WHERE userID=?) " +
-                    "AND d.itemID2=r.ISBN " +
+                    "AND d.itemID2=r.ISBN AND r.Book_Rating<>0 " +
                     "GROUP BY d.itemID1 ORDER BY avgRat DESC LIMIT ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, userId);
