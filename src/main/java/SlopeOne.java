@@ -8,14 +8,14 @@ class SlopeOne {
     }
 
     void test() {
-        //clearRatings();
-        clearMatrix();
+//        clearRatings();
+//        clearMatrix();
         try {
             Statement statement = conn.createStatement();
-            ResultSet resultSet = statement.executeQuery("SELECT * FROM `BX-Book-Ratings`");
+            ResultSet resultSet = statement.executeQuery("SELECT * FROM `BX-Book-Ratings`;");
             while (resultSet.next()) {
                 int userId = resultSet.getInt(1);
-                int itemId = resultSet.getInt(2);
+                String itemId = resultSet.getString(2);
                 System.out.println("userId: " + userId + ", itemId: " + itemId);
                 updateDevTable(userId, itemId);
             }
@@ -25,27 +25,27 @@ class SlopeOne {
         }
     }
 
-    void updateDevTable(int userId, int itemId) {
+    void updateDevTable(int userId, String itemId) {
         try {
             //Користувач оцінив новий елемент, тому ми шукаємо різницю в оцініці миж ним, та кожним іншим елементом, який оцінив наш юзер
             String sql = "SELECT DISTINCT r.ISBN, (r2.Book_Rating - r.Book_Rating) as ratingDifference " +
                     "FROM `BX-Book-Ratings` r, `BX-Book-Ratings` r2 " +
-                    "WHERE r.userID=? AND r.ISBN<>? AND r.Book_Rating<>0 " +
-                    "AND r2.ISBN=? AND r2.userID=? AND r2.Book_Rating<>0;";
+                    "WHERE r.userID=? AND r.ISBN<>? " +
+                    "AND r2.ISBN=? AND r2.userID=?;";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, userId);
-            stmt.setInt(2, itemId);
-            stmt.setInt(3, itemId);
+            stmt.setString(2, itemId);
+            stmt.setString(3, itemId);
             stmt.setInt(4, userId);
             ResultSet resultSet = stmt.executeQuery();
             while (resultSet.next()) {
-                int otherItemID = resultSet.getInt("ISBN");
+                String otherItemID = resultSet.getString("ISBN");
                 int ratingDifference = resultSet.getInt("ratingDifference");
                 //Якщо пара (itemID, otherItemID) вже є у матриці, то оновимо значення для count і sum
                 int countOfPairs = 0;
                 stmt = conn.prepareStatement("SELECT count(itemID1) FROM dev WHERE itemID1=? AND itemID2=?");
-                stmt.setInt(1, itemId);
-                stmt.setInt(2, otherItemID);
+                stmt.setString(1, itemId);
+                stmt.setString(2, otherItemID);
                 ResultSet resultSet2 = stmt.executeQuery();
                 if (resultSet2.next())
                     countOfPairs = resultSet2.getInt(1);
@@ -55,14 +55,14 @@ class SlopeOne {
                             "WHERE itemID1=? AND itemID2=?";
                     stmt = conn.prepareStatement(sql2);
                     stmt.setInt(1, ratingDifference);
-                    stmt.setInt(2, itemId);
-                    stmt.setInt(3, otherItemID);
+                    stmt.setString(2, itemId);
+                    stmt.setString(3, otherItemID);
                     stmt.executeUpdate();
                 } else { //Якщо пари не було, то додаємо її
                     String sql2 = "INSERT INTO dev VALUES (?, ?, 1, ?)";
                     stmt = conn.prepareStatement(sql2);
-                    stmt.setInt(1, itemId);
-                    stmt.setInt(2, otherItemID);
+                    stmt.setString(1, itemId);
+                    stmt.setString(2, otherItemID);
                     stmt.setInt(3, ratingDifference);
                     stmt.executeUpdate();
                 }
@@ -74,23 +74,23 @@ class SlopeOne {
     }
 
 
-    double predict(int userId, int itemId) {
+    double predict(int userId, String itemId) {
         try {
             double denom = 0.0; //знаменник
             double numer = 0.0; //чисельник
-            String sql = "SELECT r.ISBN, r.Book_Rating FROM `BX-Book-Ratings` r WHERE r.userID=? AND r.ISBN <> ? AND r.Book_Rating<>0";
+            String sql = "SELECT r.ISBN, r.Book_Rating FROM `BX-Book-Ratings` r WHERE r.userID=? AND r.ISBN <> ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, userId);
-            stmt.setInt(2, itemId);
+            stmt.setString(2, itemId);
             ResultSet resultSet = stmt.executeQuery();
 
             while (resultSet.next()) {
-                int j = resultSet.getInt("ISBN");
+                String j = resultSet.getString("ISBN");
                 int ratingValue = resultSet.getInt("Book_Rating");
                 //скільки разів користувачі оцінювали пару (itemId, j)
                 stmt = conn.prepareStatement("SELECT d.count, d.sum FROM dev d WHERE itemID1=? AND itemID2=?");
-                stmt.setInt(1, itemId);
-                stmt.setInt(2, j);
+                stmt.setString(1, itemId);
+                stmt.setString(2, j);
                 ResultSet resultSet2 = stmt.executeQuery();
                 if (resultSet2.next()) {
                     int count = resultSet2.getInt("count");
@@ -118,7 +118,7 @@ class SlopeOne {
                     "FROM  `BX-Book-Ratings` r, dev d " +
                     "WHERE r.userID=? " +
                     "AND d.itemID1 NOT IN (SELECT ISBN FROM `BX-Book-Ratings` WHERE userID=?) " +
-                    "AND d.itemID2=r.ISBN AND r.Book_Rating<>0 " +
+                    "AND d.itemID2=r.ISBN " +
                     "GROUP BY d.itemID1 ORDER BY avgRat DESC LIMIT ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, userId);
@@ -126,7 +126,7 @@ class SlopeOne {
             stmt.setInt(3, n);
             ResultSet resultSet = stmt.executeQuery();
             while (resultSet.next()) {
-                int itemId = resultSet.getInt("item");
+                String itemId = resultSet.getString("item");
                 double ratingValue = resultSet.getDouble("avgRat");
                 System.out.println("itemId: " + itemId + ", ratingValue: " + ratingValue);
             }
