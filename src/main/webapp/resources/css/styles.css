@@ -1,0 +1,110 @@
+@import url(https://fonts.googleapis.com/css?family=PT+Sans);
+
+body{
+	font-family: 'PT Sans', sans-serif;
+}
+
+.container{
+	max-width: 1200px;
+	margin: 0 auto;
+}
+
+.book{
+	float: left;
+	display: inline-block;
+	width: 360px;
+	margin: 20px;
+	/*outline: solid 1px black;*/
+}
+
+.book .cover{
+	position: relative;
+	height: 500px;
+	overflow: hidden;
+}
+
+.book .cover .desc{
+	position: absolute;
+	top: 0;
+	margin: 0;
+	padding: 10px;
+	min-width: calc(100% - 20px);
+	max-height: calc(100% - 40px);
+	opacity: 0;
+	transition: opacity 0.1s ease;
+	text-align: center
+}
+
+.book .cover:hover .desc{
+	opacity: 1;
+}
+
+.book .cover .desc h2{
+	margin-top: 0;
+}
+
+.book .cover .desc p{
+	text-align: left;
+}
+
+.book .cover img{
+	width: auto;
+	width: 100%;
+	max-width: 100%;
+	opacity: 1;
+	transition: opacity 0.2s ease;
+	border-radius: 5px;
+}
+
+.book .cover:hover img{
+	opacity: 0.25;
+}
+
+.book .rating{
+	display: table;
+	margin: 15px auto 0;
+}
+
+.book .rating input[type="radio"]{
+	display: none;
+}
+
+.book .rating input[type="radio"] + label{
+	display: inline-block;
+	float: left;
+	text-align: center;
+	width: 30px;
+	padding: 5px 0;
+	background-color: #f2f2f2;
+}
+
+.book .rating input[type="radio"]:not(:first-of-type) + label{
+	border-left: dotted 1px grey;
+}
+
+.book .rating input[type="radio"]:first-of-type + label{
+	border-top-left-radius: 5px;
+	border-bottom-left-radius: 5px;
+}
+
+.book .rating input[type="radio"]:last-of-type + label{
+	border-top-right-radius: 5px;
+	border-bottom-right-radius: 5px;
+}
+
+.book .rating input[type="radio"]:checked + label{
+	background-color: grey;
+	color: #f2f2f2;
+}
+.knopka {
+  color: #fff; /* цвет текста */
+  text-decoration: none; /* убирать подчёркивание у ссылок */
+  user-select: none; /* убирать выделение текста */
+  background: rgb(212,75,56); /* фон кнопки */
+  padding: .7em 1.5em; /* отступ от текста */
+  outline: none; /* убирать контур в Mozilla */
+} 
+.knopka:hover { background: rgb(232,95,76); } /* при наведении курсора мышки */
+.knopka:active { background: rgb(152,15,0); } /* при нажатии */
+
+

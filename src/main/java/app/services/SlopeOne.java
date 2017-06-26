@@ -1,15 +1,28 @@
-import java.sql.*;
+package app.services;
 
-class SlopeOne {
+import org.springframework.stereotype.Component;
+import app.pojo.Book;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+public class SlopeOne {
     private Connection conn;
+
+    public Integer getCurrentUserId() {
+        return currentUserId;
+    }
+
+    private Integer currentUserId;
 
     SlopeOne() {
         conn = (new DBConnect()).getConnection();
+        currentUserId = currentUserId();
     }
 
-    void test() {
-//        clearRatings();
-//        clearMatrix();
+    void fillDevFromRatings() {
         try {
             Statement statement = conn.createStatement();
             ResultSet resultSet = statement.executeQuery("SELECT * FROM `BX-Book-Ratings`;");
@@ -20,6 +33,66 @@ class SlopeOne {
                 updateDevTable(userId, itemId);
             }
             resultSet.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Integer currentUserId() {
+        int userId = 0;
+        try {
+            Statement statement = conn.createStatement();
+            ResultSet resultSet = statement.executeQuery("select max(userId) from `BX-Book-Ratings`");
+            if (resultSet.next())
+                userId = resultSet.getInt(1) + 1;
+            System.out.println("currentUserId: " + userId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return userId;
+    }
+
+    public void addNewRating(String isbn, int rating) {
+        try {
+            PreparedStatement stmt = conn.prepareStatement("INSERT INTO `BX-Book-Ratings` VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE Book_Rating=?");
+            stmt.setInt(1, currentUserId);
+            stmt.setString(2, isbn);
+            stmt.setInt(3, rating);
+            stmt.setInt(4, rating);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void fillDevForCurrentUser() {
+        try {
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM `BX-Book-Ratings` where userId=?;");
+            stmt.setInt(1, currentUserId);
+            ResultSet resultSet = stmt.executeQuery();
+            while (resultSet.next()) {
+                String itemId = resultSet.getString("ISBN");
+                System.out.println("currentUserId: " + currentUserId + ", itemId: " + itemId);
+                updateDevTable(currentUserId, itemId);
+            }
+            resultSet.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void addNewRatings(List<Book> list) {
+        try {
+            PreparedStatement stmt = conn.prepareStatement("INSERT INTO `BX-Book-Ratings` VALUES (?, ?, ?)");
+            for (Book book : list) {
+                stmt.setInt(1, currentUserId);
+                stmt.setString(2, book.getIsbn());
+                stmt.setInt(3, book.getRating());
+                stmt.executeUpdate();
+            }
+            for (Book book : list)
+                updateDevTable(currentUserId, book.getIsbn());
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -74,7 +147,7 @@ class SlopeOne {
     }
 
 
-    double predict(int userId, String itemId) {
+    public double predict(int userId, String itemId) {
         try {
             double denom = 0.0; //знаменник
             double numer = 0.0; //чисельник
@@ -111,7 +184,47 @@ class SlopeOne {
         return 0;
     }
 
-    void predictBest(int userId, int n) {
+    public List<Book> showInitialBooks() {
+        List<Book> books = new ArrayList<>(10);
+        try {
+            Statement statement = conn.createStatement();
+            ResultSet resultSet = statement.executeQuery("SELECT d.itemID1 FROM dev d where d.itemID1 <> 0380001411 AND d.itemID1 <> 0385504209 ORDER BY d.sum DESC LIMIT 10");
+            ResultSet resultSet2;
+            PreparedStatement stmt;
+            while (resultSet.next()) {
+                String itemId = resultSet.getString("itemID1");
+                stmt = conn.prepareStatement("SELECT ISBN, `book-title`, `book-author`, `image-URL-L` FROM `bx-books` where ISBN = ?;");
+                stmt.setString(1, itemId);
+                resultSet2 = stmt.executeQuery();
+                if (resultSet2.next())
+                    books.add(getBookFromResultSet(resultSet2));
+                resultSet2.close();
+            }
+            resultSet.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+        return books;
+    }
+
+    private Book getBookFromResultSet(ResultSet resultSet) throws SQLException {
+        String isbn = resultSet.getString(1);
+        String title = resultSet.getString(2);
+        String author = resultSet.getString(3);
+        String image = resultSet.getString(4);
+        //System.out.println("isbn: " + isbn + " title: " + title + " author: " + author + " image: " + image);
+        Book book = new Book();
+        book.setIsbn(isbn);
+        book.setTitle(title);
+        book.setAuthor(author);
+        book.setImg(image);
+        return book;
+    }
+
+    public List<Book> predictBest(int userId, int n) {
+        List<Book> books = new ArrayList<>(n);
         try {
             String sql = "SELECT d.itemID1 as item, " +
                     "sum(d.count*(d.sum/d.count+ r.Book_Rating))/sum(d.count) as avgRat " +
@@ -125,14 +238,21 @@ class SlopeOne {
             stmt.setInt(2, userId);
             stmt.setInt(3, n);
             ResultSet resultSet = stmt.executeQuery();
+            ResultSet resultSet2;
             while (resultSet.next()) {
                 String itemId = resultSet.getString("item");
                 double ratingValue = resultSet.getDouble("avgRat");
-                System.out.println("itemId: " + itemId + ", ratingValue: " + ratingValue);
+                stmt = conn.prepareStatement("SELECT ISBN, `book-title`, `book-author`, `image-URL-L` FROM `bx-books` where ISBN = ?;");
+                stmt.setString(1, itemId);
+                resultSet2 = stmt.executeQuery();
+                if (resultSet2.next())
+                    books.add(getBookFromResultSet(resultSet2));
+                //System.out.println("isbn: " + itemId + ", ratingValue: " + ratingValue);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return books;
     }
 
     private void clearRatings() {
